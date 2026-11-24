@@ -1,0 +1,68 @@
+name: Build Deb
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          unzip -o StatusBarNotifyAppIcons.zip
+          ls -la StatusBarNotifyAppIcons
+
+      - name: Install build deps
+        run: |
+          brew install ldid xz make
+          echo "/opt/homebrew/opt/make/libexec/gnubin" >> $GITHUB_PATH
+
+      - name: Setup Theos roothide
+        run: |
+          set -e
+          export THEOS=$GITHUB_WORKSPACE/theos
+          git clone --recursive --depth 1 -b master https://github.com/roothide/theos.git $THEOS
+          mkdir -p $THEOS/sdks
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git /tmp/sdks
+          cd /tmp/sdks
+          git sparse-checkout set iPhoneOS16.5.sdk
+          cp -R /tmp/sdks/iPhoneOS16.5.sdk $THEOS/sdks/
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
+
+      - name: Build package
+        working-directory: StatusBarNotifyAppIcons
+        run: |
+          set -e
+          make clean || true
+          make package FINALPACKAGE=1
+          ls -l packages
+
+      - name: Check cpusubtype
+        working-directory: StatusBarNotifyAppIcons
+        run: |
+          python3 - <<'PY'
+          import glob, struct, subprocess, os, tempfile
+          deb = glob.glob('packages/*.deb')[0]
+          print('deb:', deb, os.path.getsize(deb))
+          tmp = tempfile.mkdtemp()
+          subprocess.run(['dpkg-deb','-x',deb,tmp], check=True)
+          for root, dirs, files in os.walk(tmp):
+              for f in files:
+                  p = os.path.join(root, f)
+                  with open(p,'rb') as fh:
+                      head = fh.read(32)
+                  if len(head) < 32: continue
+                  if struct.unpack('<I', head[:4])[0] != 0xfeedfacf: continue
+                  v = struct.unpack('<IIIIIIII', head)
+                  print(f, 'cpusubtype=%08x' % v[2])
+          PY
+
+      - name: Upload deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: StatusBarNotifyAppIcons-deb
+          path: StatusBarNotifyAppIcons/packages/*.deb

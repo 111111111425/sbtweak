@@ -37,6 +37,10 @@ jobs:
         working-directory: StatusBarNotifyAppIcons
         run: |
           set -e
+          mkdir -p "$HOME/fakebin"
+          printf '#!/bin/bash\nif [ "$1" = "-r" ]; then shift; fi\nexec "$@"\n' > "$HOME/fakebin/fakeroot"
+          chmod +x "$HOME/fakebin/fakeroot"
+          export PATH="$HOME/fakebin:$PATH"
           make clean || true
           make package FINALPACKAGE=1
           ls -l packages

@@ -18,7 +18,7 @@ jobs:
 
       - name: Install build deps
         run: |
-          brew install ldid xz make
+          brew install ldid xz make dpkg fakeroot
           echo "/opt/homebrew/opt/make/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup Theos roothide

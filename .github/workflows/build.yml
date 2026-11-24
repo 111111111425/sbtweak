@@ -38,7 +38,7 @@ jobs:
         run: |
           set -e
           mkdir -p "$HOME/fakebin"
-          printf '#!/bin/bash\nif [ "$1" = "-r" ]; then shift; fi\nexec "$@"\n' > "$HOME/fakebin/fakeroot"
+          printf '#!/bin/bash\nwhile [ "$1" = "-i" ] || [ "$1" = "-s" ]; do shift 2; done\nif [ "$1" = "-r" ]; then shift; fi\nexec "$@"\n' > "$HOME/fakebin/fakeroot"
           chmod +x "$HOME/fakebin/fakeroot"
           export PATH="$HOME/fakebin:$PATH"
           make clean || true

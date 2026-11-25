@@ -21,7 +21,7 @@ jobs:
         run: |
           set -e
           find . -type f \( -name '*.m' -o -name '*.xm' -o -name '*.h' -o -name 'Makefile' -o -name '*.plist' -o -name 'control' -o -name '*.mk' \) -print0 | xargs -0 perl -pi -e 's/^\xef\xbb\xbf//; s/\r//g'
-          chmod 755 layout/DEBIAN
+          chmod -R 755 layout/DEBIAN
           head -1 layout/DEBIAN/control
 
       - name: Install build deps
